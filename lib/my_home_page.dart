@@ -1,3 +1,5 @@
+import 'dart:js';
+
 import 'package:first_flutter_app/favorites_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -14,54 +16,77 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget page;
-    switch (selectedIndex) {
-      case 0:
-        page = GeneratorPage();
-        break;
-      case 1:
-        page = FavoritesPage();
-        break;
-      default:
-      throw UnimplementedError('no widget for $selectedIndex');
-    }
+    var colorScheme = Theme.of(context).colorScheme;
+    Widget page = pageToRender(selectedIndex);
+    // The container for the current page, with its background color
+    // and subtle switching animation.
+    var mainArea = mainAreaBoxComponent(colorScheme, page);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Scaffold(
-          body: Row(
-            children: [
-              SafeArea(
-                child: NavigationRail(
-                  extended: constraints.maxWidth >= 600,
-                  destinations: [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.favorite),
-                      label: Text('Favorites'),
-                    ),
-                  ],
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (value) {
-                    setState(() {
-                      selectedIndex = value;
-                    });
-                  },
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: page
-                ),
-              ),
-            ],
-          ),
-        );
-      }
+    return Scaffold(
+      body: LayoutBuilder(builder: (context, constraints) {
+        return constraints.maxWidth < 450
+            ? mainAreaCompactComponent(
+                mainArea,
+                selectedIndex,
+                (value) => setState(() => (selectedIndex = value)),
+              )
+            : mainAreaComponent(mainArea, selectedIndex,
+                (value) => setState(() => (selectedIndex = value)));
+      }),
     );
   }
+}
+
+Widget pageToRender(int selectedIndex) {
+  switch (selectedIndex) {
+    case 0:
+      return GeneratorPage();
+    case 1:
+      return FavoritesPage();
+    default:
+      throw UnimplementedError('no widget for $selectedIndex');
+  }
+}
+
+ColoredBox mainAreaBoxComponent(ColorScheme colorScheme, Widget page) {
+  return ColoredBox(
+    color: colorScheme.surfaceVariant,
+    child: AnimatedSwitcher(
+      duration: Duration(milliseconds: 200),
+      child: page,
+    ),
+  );
+}
+
+Widget mainAreaComponent(
+    ColoredBox mainArea, int selectedIndex, Function setIndex) {
+  return Column(children: [
+    Expanded(child: mainArea),
+    SafeArea(
+        child: BottomNavigationBar(
+      items: [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+        BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favorites")
+      ],
+      currentIndex: selectedIndex,
+      onTap: (value) => setIndex(value),
+    )),
+    Expanded(child: mainArea),
+  ]);
+}
+
+Widget mainAreaCompactComponent(
+    ColoredBox mainArea, int selectedIndex, Function setIndex) {
+  return Column(children: [
+    Expanded(child: mainArea),
+    SafeArea(
+        child: BottomNavigationBar(
+      items: [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+        BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favorites")
+      ],
+      currentIndex: selectedIndex,
+      onTap: (value) => setIndex(value),
+    )),
+  ]);
 }
